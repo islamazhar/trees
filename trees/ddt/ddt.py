@@ -1,10 +1,11 @@
 import logging
 import numpy as np
-from .. import Tree
+from trees.tree import Tree
 
 class DirichletDiffusionTree(Tree):
 
     def __init__(self, root=None, constraints=[], **params):
+        self.node_ID = 0
         super(DirichletDiffusionTree, self).__init__(root=root,
                                                      constraints=constraints,
                                                      **params)
@@ -14,7 +15,7 @@ class DirichletDiffusionTree(Tree):
         logging.debug("Initializing tree from data...")
         X = np.array(X)
         N, _ = X.shape
-        points = set(xrange(N))
+        points = set(range(N))
         super(DirichletDiffusionTree, self).initialize_assignments(points)
         self.reconfigure_subtree(self.root, X)
 
@@ -38,26 +39,47 @@ class DirichletDiffusionTree(Tree):
                 node.set_state('latent_value', sum(n.get_state('latent_value') for n in node.children) /
                                float(len(node.children)))
 
-    def calculate_node_likelihood(self, node=None):
+    def calculate_node_likelihood(self, c, node=None):
+        """
+        if we do not input the node, the node will be root
+        """
         node = node or self.root
 
         if 'likelihood' in node.cache:
             return node.get_cache('likelihood')
 
         if node.is_leaf():
+            """
+            tree prob is 0 if the node is a leaf
+            path count is 1 if the node is a leaf
+            data prob is transition_probability(browian motion) 
+            if the node is a leaf
+            """
             return 1, 0, self.likelihood_model.transition_probability(node.parent, node)
 
         node_time = node.get_state('time')
         left_child, right_child = node.children
-        path_count, tree_prob, data_prob = self.calculate_node_likelihood(node=left_child)
-
+        path_count, tree_prob, data_prob = self.calculate_node_likelihood(c=c, node=left_child)
+        """
+        tree prob is determined by divergence time and non-divergence time
+             divergence time is determined by path count
+             no divergence time is determined by number of leaf nodes in each path
+        data prob is determined by brownian motion76UY
+        """
         if not node.is_root():
-            tree_prob += self.df.log_no_divergence(node.parent.get_state('time'), node_time, path_count)
-            tree_prob += self.df.log_divergence(node_time)
+            """
+            checking formula for log_no_divergence in Neal
+            """
+            tree_prob += self.df.log_no_divergence(node.parent.get_state('time'), node_time, path_count, c)
+            tree_prob += self.df.log_divergence(node_time, c)
+            #tree_prob += self.df.log_no_divergence(node.parent.get_state('time'), node_time, path_count)
+            #tree_prob += self.df.log_divergence(node_time)
+
         data_prob += self.likelihood_model.transition_probability(node.parent, node)
 
-        right_path_count, right_tree_prob, right_data_prob = self.calculate_node_likelihood(node=right_child)
+        right_path_count, right_tree_prob, right_data_prob = self.calculate_node_likelihood(c, node=right_child)
         result = path_count + right_path_count, tree_prob + right_tree_prob, data_prob + right_data_prob
+        # store node cache in this line
         node.set_cache('likelihood', result)
         return result
 
@@ -204,6 +226,32 @@ class DirichletDiffusionTree(Tree):
 
     def node_as_string(self, node):
         return str(node.get_state('time'))
+
+    def write_node(self, cur_node, file):
+        if not cur_node.is_leaf():
+            l, r = cur_node.children
+            l_id = self.write_node(l, file)
+            r_id = self.write_node(r, file)
+            self.node_ID += 1
+            node_id = self.node_ID
+        else:
+            node_id = l_id = r_id = -1
+
+        if cur_node.is_root():
+            is_root = "1"
+        else:
+            is_root = "0"
+
+        file.write(str(node_id)+" "+is_root+" "+str(l_id)+ " "+str(r_id)+" "+str(cur_node.get_state('time'))+"\n")
+
+        return self.node_ID
+
+    def write_tree_file(self, tree_id, node_numbers,  file_name):
+        self.node_ID = 0
+        file = open(file_name, "w")
+        file.write(str(tree_id)+ " "+str(2*node_numbers - 1)+"\n")
+        self.write_node(self.root, file)
+        file.close()
 
     def get_parameters(self):
         return {

@@ -1,10 +1,10 @@
 import numpy as np
-from theanify import theanify, Theanifiable
+from trees.ddt.theanify import theanify, Theanifiable
 from theano.tensor.shared_randomstreams import RandomStreams
 import theano.tensor as T
 
-class LikelihoodModel(Theanifiable):
 
+class LikelihoodModel(Theanifiable):
     def __init__(self, **parameters):
         super(LikelihoodModel, self).__init__()
         for param in self.get_parameters():
@@ -17,7 +17,6 @@ class LikelihoodModel(Theanifiable):
 
 
 class GaussianLikelihoodModel(LikelihoodModel):
-
     def __init__(self, **parameters):
         super(GaussianLikelihoodModel, self).__init__(**parameters)
         self.sigma0inv = np.linalg.inv(self.sigma0)
@@ -26,6 +25,7 @@ class GaussianLikelihoodModel(LikelihoodModel):
 
     def transition_probability(self, parent, child):
         child_latent, child_time = child.get_state('latent_value'), child.get_state('time')
+        # for root case
         if parent is None:
             return self.calculate_transition(child_latent, self.mu0, child_time, -1)
         parent_latent, parent_time = parent.get_state('latent_value'), parent.get_state('time')
@@ -39,7 +39,7 @@ class GaussianLikelihoodModel(LikelihoodModel):
 
         logdet = T.log(T.nlinalg.det(sigma))
         delta = state - mu
-        pre = -(self.D / 2.0 * np.log(2 * np.pi) + 1/2.0 * logdet)
+        pre = -(self.D / 2.0 * np.log(2 * np.pi) + 1 / 2.0 * logdet)
         return pre + -0.5 * (T.dot(delta, T.dot(T.nlinalg.matrix_inverse(sigma), delta)))
 
     @theanify(T.dvector('mean'), T.dmatrix('cov'))
