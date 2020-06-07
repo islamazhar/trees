@@ -191,6 +191,7 @@ class TreeNode(object):
         self.state = state or {}
         self.children = []
         self.parent = None
+        self.node_id = 0
         self.cache = {}
 
     def set_state(self, key, value):
@@ -270,7 +271,7 @@ class TreeNode(object):
             if self.points() != points:
                 raise Exception('wat')
             return self
-        for i in xrange(len(self.children)):
+        for i in range(len(self.children)):
             d = points & self.children[i].points()
             if len(d) == len(points):
                 return self.children[i].induce(points)
