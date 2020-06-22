@@ -145,7 +145,7 @@ if __name__ == "__main__":
     scores = [[], []]
     for val, sampler in enumerate([sampler1, sampler2]):
         sampler_cost = []
-        for i in xrange(100):
+        for i in range(100):
             trees, costs = iterate(sampler, 1000)
             sampler_cost.extend(costs)
 
