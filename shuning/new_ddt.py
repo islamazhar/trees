@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from trees.tree import Tree
-from math import log, exp
+from math import log, exp, factorial
 import theano.tensor as T
 from theanify.theanify import theanify, Theanifiable
 from theano.tensor.shared_randomstreams import RandomStreams
@@ -12,6 +12,7 @@ initialize_from_data to initialize tree strutcure from data
 calculate_node_likelihood: calculate likelihood for each node recursively
 """
 class DirichletDiffusionTree(Tree):
+    #def __init__(self, n, root=None, **params):
     def __init__(self, root=None, **params):
         super(DirichletDiffusionTree, self).__init__(root=root,**params)
         self.params = params
@@ -19,10 +20,20 @@ class DirichletDiffusionTree(Tree):
         # add harmonic function in this line;
 
         # store harmonic function in this line for future computation;
-        self.harmonic = np.zeros(100)
+        # temporary for storing the harmonic function, improve memory issue latter;
+
+        # 1 + 1/2 + 1/3 + 1/4 + ....1/n
+        self.harmonic = np.zeros((5000)+1)
         self.harmonic[0] = 0
-        for i in range(1,100):
+
+        # denote log(n!) = log(1x2x...n) = log(1) + log(2) + ....log(n)
+        self.log_factorial = np.zeros((5000)+1)
+        self.log_factorial[0] = -float('inf')
+        self.log_factorial[1] = 0
+
+        for i in range(1,(5000)+1):
             self.harmonic[i] = self.harmonic[i-1] + 1/i
+            self.log_factorial[i] = self.log_factorial[i-1]+log(i)
 
     def initialize_from_data(self, X):
         logging.debug("Initializing tree from data...")
@@ -62,6 +73,88 @@ class DirichletDiffusionTree(Tree):
             return self.get_leaves(left_child) + self.get_leaves(right_child)
 
     """
+    Function corresponding to neal's C code dft_log_prob_paths
+    """
+    # if y == x.parent, same object debug;
+    def dft_log_prob_paths(self, node, c):
+        df = self.df
+
+        # get number of total leaves under this node;
+        nx = self.get_leaves(node)
+        node_time = node.get_state('time')
+
+        logprob = - df.log_no_divergence(node_time, node.parent.get_state('time'), c) \
+                  * self.harmonic[nx-1]
+
+        y = node.parent
+
+        while not y.is_root():
+            ny = self.get_leaves(y)
+
+            # always run this if condition at first;
+            if(y == node.parent): #revise this line
+                logprob += log((df.divergence(y.get_state('time'),c))/(ny - nx)) \
+                           + self.log_factorial[nx-1] \
+                           - (self.log_factorial[ny-1] - self.log_factorial[ny-nx])
+
+            else:
+                logprob += (self.log_factorial[nc-1] - self.log_factorial[nc-nx-1]) - \
+                           (self.log_factorial[ny-1] - self.log_factorial[ny-nx-1])
+
+            A = df.cumulative_divergence(y.get_state('time'), c)
+
+            if not y.is_root():
+                A -= df.cumulative_divergence(y.parent.get_state('time'), c)
+
+            logprob -= A * (self.harmonic[ny-1] - self.harmonic[ny-nx-1])
+
+            # first time to initialize nc
+            nc = ny
+
+            y = y.parent
+
+        """
+        debugging process for python version
+        """
+        return logprob
+
+    """
+    Function corresponding to neal's C code dft_log_prob_path
+    """
+# change if y == x.parent; two objects are same?
+
+    def dft_log_prob_path(self, node, c):
+        df = self.df
+
+        nx = self.get_leaves(node)
+
+        y = node.parent
+
+        while not y.is_root():
+
+            ny = self.get_leaves(y) - nx
+
+            if (y == node.parent):
+                # first assignment for logprob
+                logprob = log(df.divergence(y.get_state('time'), c)/ ny)
+            else:
+                logprob += log(float(nc) / ny)
+
+            A = df.cumulative_divergence(y.get_state('time'), c)
+
+            if not y.is_root():
+                A -= df.cumulative_divergence(y.parent.get_state('time'), c)
+
+            logprob -= A / float(ny)
+
+            nc = ny
+
+            y = y.parent
+
+        return logprob
+
+
+    """
     A recursive function to calculate node likelihood
     *****************************************
     *********** Check the formula ***********
@@ -83,6 +176,7 @@ class DirichletDiffusionTree(Tree):
             """
             #return 1, 0, self.likelihood_model.transition_probability(node.parent, node)
             return 0, self.likelihood_model.transition_probability(node.parent, node)
+
         node_time = node.get_state('time')
         left_child, right_child = node.children
 
@@ -90,7 +184,6 @@ class DirichletDiffusionTree(Tree):
             tree_prob, data_prob = self.calculate_node_likelihood(c, left_child)
             right_tree_prob, right_data_prob = self.calculate_node_likelihood(c, right_child)
             return tree_prob + right_tree_prob, data_prob + right_data_prob
-
 
         if not node.is_root():
             """
@@ -117,7 +210,7 @@ class DirichletDiffusionTree(Tree):
 
         data_prob += self.calculate_node_likelihood(c=c, node=left_child)[1]
         data_prob += self.calculate_node_likelihood(c=c, node=right_child)[1]
-        
+
         return tree_prob, data_prob
 
     
