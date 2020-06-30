@@ -112,6 +112,7 @@ class MetropolisHastingsSampler(object):
     """
     #def parent_move(self):
     def parent_move2(self):
+        print("inside shuning's parent move")
         logging.debug("Copying the tree....")
         tree = self.tree.copy()
         c = self.c
@@ -296,7 +297,7 @@ class MetropolisHastingsSampler(object):
             Important function to update tree structure.
             """
             # self.parent_move
-            self.parent_move2
+            self.parent_move2()
 
             """
             Save tree in self.parent_move2 step, including the tree structure, detached node, new generated 
