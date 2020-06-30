@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from trees.tree import Tree
-from math import log, exp, factorial
+import math
 import theano.tensor as T
 from theanify.theanify import theanify, Theanifiable
 from theano.tensor.shared_randomstreams import RandomStreams
@@ -28,13 +28,13 @@ class DirichletDiffusionTree(Tree):
 
         # denote log(n!) = log(1x2x...n) = log(1) + log(2) + ....log(n)
         self.log_factorial = np.zeros((5000)+1)
-        self.log_factorial[0] = -float('inf')
+        self.log_factorial[0] = 0 # How come log_factorial[0] = -inf ?
         self.log_factorial[1] = 0
 
         for i in range(1,(5000)+1):
-            self.harmonic[i] = self.harmonic[i-1] + 1/i
-            self.log_factorial[i] = self.log_factorial[i-1]+log(i)
-
+            self.harmonic[i] = self.harmonic[i-1] + 1/float(i) # changed
+            self.log_factorial[i] = self.log_factorial[i-1]+math.log(float(i)) # changed
+        #print(self.log_factorial[0:20])
     def initialize_from_data(self, X):
         logging.debug("Initializing tree from data...")
         X = np.array(X)
@@ -81,10 +81,13 @@ class DirichletDiffusionTree(Tree):
 
         # get number of total leaves under this node;
         nx = self.get_leaves(node)
+        #print("nx", nx)
         node_time = node.get_state('time')
-
+        #print("Node time", node_time)
+        #print(self.harmonic[nx-1])
         logprob = - df.log_no_divergence(node_time, node.parent.get_state('time'), c) \
                   * self.harmonic[nx-1]
+        #print("LogProb", logprob)
 
         y = node.parent
 
@@ -92,11 +95,14 @@ class DirichletDiffusionTree(Tree):
             ny = self.get_leaves(y)
 
             # always run this if condition at first;
+            #print(nx, ny)
             if(y == node.parent): #revise this line
-                logprob += log((df.divergence(y.get_state('time'),c))/(ny - nx)) \
+                #print("This should get printed")
+                t= math.log((df.divergence(y.get_state('time'),c))/(ny - nx)) \
                            + self.log_factorial[nx-1] \
                            - (self.log_factorial[ny-1] - self.log_factorial[ny-nx])
 
+                logprob +=t
             else:
                 logprob += (self.log_factorial[nc-1] - self.log_factorial[nc-nx-1]) - \
                            (self.log_factorial[ny-1] - self.log_factorial[ny-nx-1])
@@ -107,7 +113,7 @@ class DirichletDiffusionTree(Tree):
                 A -= df.cumulative_divergence(y.parent.get_state('time'), c)
 
             logprob -= A * (self.harmonic[ny-1] - self.harmonic[ny-nx-1])
-
+            #print(logprob)
             # first time to initialize nc
             nc = ny
 
@@ -116,6 +122,8 @@ class DirichletDiffusionTree(Tree):
         """
         debugging process for python version
         """
+        if math.isnan(logprob):
+            assert "log prob can not be NAN"
         return logprob
 
     """
@@ -136,9 +144,9 @@ class DirichletDiffusionTree(Tree):
 
             if (y == node.parent):
                 # first assignment for logprob
-                logprob = log(df.divergence(y.get_state('time'), c)/ ny)
+                logprob = math.log(df.divergence(y.get_state('time'), c)/ ny)
             else:
-                logprob += log(float(nc) / ny)
+                logprob += math.log(float(nc) / ny)
 
             A = df.cumulative_divergence(y.get_state('time'), c)
 
