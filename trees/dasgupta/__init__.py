@@ -1,1 +1,1 @@
-from costtree import DasguptaTree
+from trees.dasgupta.costtree import DasguptaTree

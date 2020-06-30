@@ -1,5 +1,5 @@
 import theano.tensor as T
-from theanify import theanify, Theanifiable
+from theanify.theanify import theanify, Theanifiable
 from theano.tensor.shared_randomstreams import RandomStreams
 
 class DivergenceFunction(Theanifiable):

@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from tssb import TSSB, Node
+from trees.tssb.tssb import TSSB, Node
 
 class InteractiveTSSB(TSSB):
 

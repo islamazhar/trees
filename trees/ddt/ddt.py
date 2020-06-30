@@ -14,7 +14,7 @@ class DirichletDiffusionTree(Tree):
         logging.debug("Initializing tree from data...")
         X = np.array(X)
         N, _ = X.shape
-        points = set(xrange(N))
+        points = set(range(N))
         super(DirichletDiffusionTree, self).initialize_assignments(points)
         self.reconfigure_subtree(self.root, X)
 

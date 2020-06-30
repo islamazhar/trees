@@ -1,5 +1,5 @@
 from path import Path
-from sklearn.datasets import fetch_mldata, fetch_20newsgroups
+from sklearn.datasets import fetch_openml, fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn import datasets as dt
 from scipy.io import loadmat
@@ -83,7 +83,7 @@ def load_awa(data_dir):
 
 def load_mnist(data_dir):
     DATA_DIR = data_dir / "mnist"
-    mnist = fetch_mldata('MNIST original', data_home=DATA_DIR)
+    mnist = fetch_openml('MNIST original', data_home=DATA_DIR)
     X, y = mnist['data'], mnist['target']
     return ImageDataset(X, y, (28, 28))
 

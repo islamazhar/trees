@@ -1,4 +1,4 @@
-import cPickle as pickle
+import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx

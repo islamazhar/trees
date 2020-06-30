@@ -1,6 +1,6 @@
 from ..distribution import Distribution
 import theano.tensor as T
-from theanify import Theanifiable, theanify
+from theanify.theanify import Theanifiable, theanify
 
 class DepthFunction(Theanifiable, Distribution):
 

@@ -1,4 +1,4 @@
-from tree import Tree, TreeNode, TreeLeaf, MCMCSampler
+from trees.tree import Tree, TreeNode, TreeLeaf, MCMCSampler
 from . import distribution
 from . import tssb
 from . import interact

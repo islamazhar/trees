@@ -21,16 +21,16 @@ if __name__ == "__main__":
     mh = MetropolisHastingsSampler(ddt, X)
     mh.initialize_assignments()
 
-    for _ in tqdm(xrange(1000)):
+    for _ in tqdm(range(1000)):
         mh.sample()
 
     plt.figure()
     plt.plot(mh.likelihoods)
 
-    plt.figure()
-    plot_tree(mh.tree)
+    #plt.figure()
+    #plot_tree(mh.tree)
 
-    plt.figure()
-    plot_tree_2d(mh.tree, X)
+    #plt.figure()
+    #plot_tree_2d(mh.tree, X)
 
     plt.show()

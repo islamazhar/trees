@@ -1,5 +1,5 @@
 import numpy as np
-from theanify import theanify, Theanifiable
+from theanify.theanify import theanify, Theanifiable
 from theano.tensor.shared_randomstreams import RandomStreams
 import theano.tensor as T
 

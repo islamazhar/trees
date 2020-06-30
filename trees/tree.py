@@ -7,9 +7,9 @@ from functools import reduce
 from itertools import combinations
 from tqdm import tqdm
 from Bio import Phylo
-from cStringIO import StringIO
+from io import StringIO
 
-from util import tree_cache
+from trees.util import tree_cache
 
 class Tree(object):
 
