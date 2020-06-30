@@ -112,73 +112,78 @@ class MetropolisHastingsSampler(object):
     """
     #def parent_move(self):
     def parent_move2(self):
-        print("inside shuning's parent move")
+        #print("inside shuning's parent move")
         logging.debug("Copying the tree....")
         tree = self.tree.copy()
         c = self.c
 
         """
-        select a node randomly
+        select a node randomly Mazhar: But the node can not be a leaf node. 
         """
-        node = tree.choice()
-        #y = node.parent.get_state('time')
+        for node in tree.dfs():
+            if node.is_root() or node.is_leaf():
+                continue
 
-        logprob0 = tree.dft_log_prob_paths(node, c)
-        logprob0 -= tree.dft_log_prob_path(node, c)
-
-
-        # get randomly selected node's parent's assignment to avoid of leaf
-        old_assignment = tree.get_assignment(node.parent)
-        # get index and state of parent of randomly chosed node to remove it
-        old_index, old_state = old_assignment
-
-        # detach the subtree
-        subtree = node.detach()
-
-        """
-        Save detached node
-        """
-
-        points = set()
-        time = float('inf')
-        trial = 0
-        # select a time which has smaller divergence time than subtree
-        while time > subtree.get_state('time'):
-            (assignment, forward_likelihood) = tree.sample_assignment(c=c, points=points, state=old_state)
-            logging.debug("Candidate assignment: %s", str(assignment))
-            (index, state) = assignment
-            time = state['time']
-            trial += 1
-            if trial > 100:
-                return -0.5
-        """
-        Save newly generated divergence time and tree structure.
-        """
-        # assign the node to the new location;
-        tree.assign_node(subtree, assignment)
-
-        # use subtree in a changed new tree to calculate likelihood;
-        logprob1 = tree.dft_log_prob_paths(subtree, c)
-        logprob1 -= tree.dft_log_prob_path(subtree, c)
+            #y = node.parent.get_state('time')
+            # dft_log_prob_node
+            logprob0 = tree.dft_log_prob_paths(node, c)
+            #print("LogProb0", logprob0)
+            logprob0 -= tree.dft_log_prob_path(node, c)
 
 
-        #######  do not use exp in calculating the acceptance ratio;
-        ####### use log-version directly;
+            # get randomly selected node's parent's assignment to avoid of leaf
+            old_assignment = tree.get_assignment(node.parent)
+            # get index and state of parent of randomly chosed node to remove it
+            old_index, old_state = old_assignment
 
-        delta = logprob0 - logprob1
-        
-        #a = min(1, np.exp(logprob0 - logprob1))
-        # case when we accept the current proposal
-        # if np.random.random() < a:
-        #    self.tree = tree
-        #    #self.tree._marg_log_likelihood = new_likelihood
+            # detach the subtree
+            subtree = node.detach()
 
-        # return delta for testing;
-        if np.random.random() < min(1, exp(delta)):
-            self.tree = tree
+            """
+            Save detached node
+            """
 
-        # return delta for testing
-        return delta
+            points = set()
+            time = float('inf')
+            trial = 0
+            # select a time which has smaller divergence time than subtree
+            while time > subtree.get_state('time'):
+                (assignment, forward_likelihood) = tree.sample_assignment(c=c, points=points, state=old_state)
+                logging.debug("Candidate assignment: %s", str(assignment))
+                (index, state) = assignment
+                time = state['time']
+                trial += 1
+                if trial > 100:
+                    return -0.5
+            """
+            Save newly generated divergence time and tree structure.
+            """
+            # assign the node to the new location;
+            tree.assign_node(subtree, assignment)
+            # where is the tree probs?
+            # use subtree in a changed new tree to calculate likelihood;
+            logprob1 = tree.dft_log_prob_paths(subtree, c)
+            logprob1 -= tree.dft_log_prob_path(subtree, c)
+
+
+            #######  do not use exp in calculating the acceptance ratio;
+            ####### use log-version directly;
+            #print(logprob0, " =  ", logprob1)
+            delta = logprob0 - logprob1
+
+            #a = min(1, np.exp(logprob0 - logprob1))
+            # case when we accept the current proposal
+            # if np.random.random() < a:
+            #    self.tree = tree
+            #    #self.tree._marg_log_likelihood = new_likelihood
+
+            # return delta for testing;
+            if np.random.random() < min(1, exp(delta)):
+                self.tree = tree
+                # return delta for testing
+                return delta
+        print("Error")
+        return -1
 
 
     def update_latent(self):
