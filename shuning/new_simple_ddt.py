@@ -8,12 +8,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 import numpy as np
 from trees.util import plot_tree
-from trees.ddt import DirichletDiffusionTree, Inverse, GaussianLikelihoodModel
+from trees.ddt import GaussianLikelihoodModel
+from shuning import  DirichletDiffusionTree, Inverse
 #from trees.ddt import DirichletDiffusionTree, GaussianLikelihoodModel
 from shuning import MetropolisHastingsSampler
 #from trees.new_mcmc import SPRSampler
 from tqdm import tqdm
-from generate_data import Generate
+from shuning import Generate
 
 """
 This script is to generate ddt from c and sigma2
@@ -73,9 +74,11 @@ if __name__ == "__main__":
         #spr = SPRSampler(ddt, all_dat[i], 0.5)
         #mh2 = MetropolisHastingsSampler(ddt2, all_dat2[i].reshape(n,1), df2, 5)
         mh.initialize_assignments()
+
         #mh2.initialize_assignments()
         #spr.initialize_assignments()
         tree_list += [mh.tree]
+        print(mh.tree.dfs(mh.tree.root))
         #tree_list2 += [mh2.tree]
 
     #print(tree_list[0].marg_log_likelihood(c=1))

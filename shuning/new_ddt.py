@@ -12,16 +12,16 @@ initialize_from_data to initialize tree strutcure from data
 calculate_node_likelihood: calculate likelihood for each node recursively
 """
 class DirichletDiffusionTree(Tree):
-    def __init__(self, n, root=None, **params):
+    def __init__(self, root=None, **params):
         super(DirichletDiffusionTree, self).__init__(root=root,**params)
         self.params = params
         self._marg_log_likelihood = None
         # add harmonic function in this line;
 
         # store harmonic function in this line for future computation;
-        self.harmonic = np.zeros(n+1)
+        self.harmonic = np.zeros(100)
         self.harmonic[0] = 0
-        for i in range(1,n+1):
+        for i in range(1,100):
             self.harmonic[i] = self.harmonic[i-1] + 1/i
 
     def initialize_from_data(self, X):
@@ -59,7 +59,7 @@ class DirichletDiffusionTree(Tree):
             return 0
         else:
             left_child, right_child = node.children
-            return self.get_leaves(node.left_child) + self.get_leaves(node.right_child)
+            return self.get_leaves(left_child) + self.get_leaves(right_child)
 
     """
     A recursive function to calculate node likelihood
